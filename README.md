@@ -1,7 +1,7 @@
 # helmhurts
 Using the Helmholtz equation to model the amplitude field of wireless propagation.
 
-This code is inspired by the following blog entry of J Cole:
+This code is inspired by the following blog entry of Jason Cole:
 http://jasmcole.com/2014/08/25/helmhurts
 that explains the idea and basically solves everything already. 
 
