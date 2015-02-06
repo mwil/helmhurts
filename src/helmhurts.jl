@@ -2,10 +2,10 @@ using Color
 using Images
 using ImageView
 
-const δ = 0.02                # spatial resolution of each pixel
+const δ = 0.02                # one pixel in the floor plan equals δ meters
 
-const η_air = 1.                      # refraction index for air
-const η_concrete = 2.55 - 0.256im     # refraction index for concrete
+const n_air = 1.                      # refractive index for air
+const n_concrete = 2.12 - 0.021im     # refractive index for concrete
                                       # the imaginary part conveys the absorption
 
 const λ = 0.12       # for a 2.5 GHz signal, wavelength is ~ 12cm
@@ -16,8 +16,8 @@ function generateMu(filename)
 	plan = reinterpret(Uint8, data(img));
 
 	μ = similar(plan, Complex)
-	μ[plan .>= 25] = (k / η_air)^2
-	μ[plan .<  25] = (k / η_concrete)^2
+	μ[plan .>= 25] = (k / n_air)^2
+	μ[plan .<  25] = (k / n_concrete)^2
 
 	return μ
 end
@@ -38,13 +38,19 @@ function generateMatrix(μ)
 
 		xs[i] = sub2ind(size(μ), x, y)
 		ys[i] = sub2ind(size(μ), x, y)
-		vs[i] = μ[x,y] - 4*δ^-2
+		vs[i] = μ[x,y] - 4δ^-2
 		i += 1
 
 		for idx in ((xp, y), (xm, y), (x, yp), (x, ym))
 			xs[i] = sub2ind(size(μ), x, y)
 			ys[i] = sub2ind(size(μ), idx...)
-			vs[i] = δ^-2
+			
+			if (x-1)>0 && (x+1) <= dimx && (y-1)>0 && (y+1) <= dimy
+				vs[i] = δ^-2
+			else
+				vs[i] = 1.0 # FIXME: what should happen when the matrix hits the boundaries?
+			end
+			
 			i += 1
 		end
 	end
@@ -52,14 +58,15 @@ function generateMatrix(μ)
 	return sparse(xs, ys, vs, length(μ), length(μ))
 end
 
-function plotMatrix(A)
+function plotMatrix(A, outfile)
 	E = 20*log10(real(A) .* real(A))
-	Ei = round(Integer, min(100, max(1, (int( 1 .+ 100 .* (E .- minimum(E)) / (maximum(E) - minimum(E)) ) ))))
+	Ei = round(Integer, min(100, max(1, (int(1 .+ 100 .* (E .- minimum(E))/(maximum(E) - minimum(E)))))))
 
 	#x = (E .- minimum(E)) / (maximum(E) - minimum(E))
 	#println(x)
 	#println("min, max ", minimum(x), maximum(x))
 	cm = colormap("oranges", logscale=true)
+	# cm = sequential_palette (20, 100, c=0.83, s=0.95, b=0.85, w=0.95, wcolor=RGB(1,1,0), dcolor=RGB(0.1,0.1,0.1), logscale=true)
 
 	#Ei[plan .< 25] = 1;
 	#Ei[f .!= 0] = 100;  # show antenna position
@@ -71,23 +78,26 @@ function plotMatrix(A)
 
 	fim = colorim(permutedims(field, [2, 1, 3]))
 
-	imwrite(fim, "figs/helmhurts.png")
+	imwrite(fim, outfile)
 end
 
 # -------------------------------------------
 # -------------------------------------------
 
 function main()
-	μ = generateMu("resources/plan-1k.png")
+	μ = generateMu("resources/plan3.png")
 	S = generateMatrix(μ)
 
-	f = zeros(Complex, size(μ))
-	f[300, 350] = 1.0;              # our Wifi emitter antenna will be there;
+	for movex in 1:20:1420
+		f = zeros(Complex, size(μ))
+		f[movex, 650] = 1.0;              # our Wifi emitter antenna will be there;
 
-	A = reshape(S \ vec(f), size(μ)...);
-	#println("min(Re(A)): $(minimum(real(A))), max(Re(A): $(maximum(real(A)))")
+		A = reshape(S \ vec(f), size(μ)...);
+		#println("min(Re(A)): $(minimum(real(A))), max(Re(A): $(maximum(real(A)))")
 
-	plotMatrix(A)
+		plotMatrix(A, "figs/move2/m-$(lpad(movex, 4, '0'))x650.png")
+		f = 0; A = 0;
+	end
 end
 
 # -------------------------------------------
