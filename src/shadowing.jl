@@ -1,9 +1,10 @@
 using Color
 using Images
 
-const INFILE = "resources/floorplan-wf.png"
+const INFILE = "resources/plan.png"
+const N_COLORS = 100
 
-const TX_POS = 870, 425
+const TX_POS = 150, 150
 
 function line(x0::Int, y0::Int, x1::Int, y1::Int)
 	result = Array((Int,Int), 0)
@@ -63,12 +64,14 @@ end
 
 #E[E .< -90] = -90
 
-cm = reverse(colormap("blues", 10))
-Ei = round(Integer, min(10, max(1, (int(1 .+ 10 .* (E .- minimum(E))/(maximum(E) - minimum(E)))))))
+cm = reverse(colormap("blues", N_COLORS))
+minE = minimum(E)
+maxE = maximum(E)
+Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxEi - minE))))))
 
 img = imread(INFILE)
 plan = reinterpret(Uint8, data(img));
-Ei[plan .== 0] = 10;
+Ei[plan .== 0] = N_COLORS;
 
 field = Array(Float64, (size(Ei)[1], size(Ei)[2], 3))
 field[:,:,1] = [ cm[ei].r for ei in Ei ]
