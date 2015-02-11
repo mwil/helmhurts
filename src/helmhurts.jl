@@ -76,7 +76,7 @@ function plotMatrix(A, outfile)
 	maxE = maximum(E)
 	Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
-	cm = reverse(colormap("blues"))
+	cm = reverse(colormap("blues", N_COLORS))
 
 	img = imread(INFILE)
 	plan = reinterpret(Uint8, data(img));
@@ -112,7 +112,7 @@ function main()
 		A = reshape(M \ vec(f), size(μ)...)
 
 		println("Plotting matrix A …")
-		plotMatrix(A, "figs/uni/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
+		plotMatrix(A, "figs/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
 		A=0;f=0;
 	end
 end
