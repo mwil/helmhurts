@@ -44,7 +44,11 @@ function shadowing(x::Int, y::Int, plan)
 		concrete += plan[pixel...] ≠ 255? 1: 0
 	end
 
-	return 20*log10(concrete*2)
+	if concrete > 0
+		return 20*log10(concrete*0.1)
+	else
+		return 0.0
+	end
 end
 
 img = imread(INFILE)
@@ -67,10 +71,10 @@ end
 cm = reverse(colormap("blues", N_COLORS))
 minE = minimum(E)
 maxE = maximum(E)
-Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxEi - minE))))))
+Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
 img = imread(INFILE)
-plan = reinterpret(Uint8, data(img));
+plan = reinterpret(Uint8, data(img))
 Ei[plan .== 0] = N_COLORS;
 
 field = Array(Float64, (size(Ei)[1], size(Ei)[2], 3))
