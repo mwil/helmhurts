@@ -13,7 +13,7 @@ const λ = 0.12                      # for a 2.5 GHz signal, wavelength is ~ 12c
 const k = 2π/λ                      # k is the wavenumber
 
 const INFILE = "resources/floorplan-wf.png"
-const N_COLORS = 10
+const N_COLORS = 20
 
 #const txX, txY = 720, 450
 const txX, txY = 870, 425 # -wf (-25)
@@ -68,12 +68,11 @@ end
 
 function plotMatrix(A, outfile)
 	E = 20*log10(real(A) .* real(A))
-	E[E .< -100.0] = -100.0
+	E[E .< -105.0] = -105.0
 	#writecsv("test.csv", E .- maximum(E))
 	#h5write("test.h5", "E", E .- maximum(E))
 
-	minE = minimum(E)
-	maxE = maximum(E)
+	minE, maxE = minimum(E), maximum(E)
 	Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
 	cm = reverse(colormap("blues", N_COLORS))

@@ -2,7 +2,7 @@ import Color
 import Images
 
 const INFILE = "resources/floorplan-wf.png"
-const N_COLORS = 10
+const N_COLORS = 20
 
 const TX_POS = 870, 425
 
@@ -77,8 +77,8 @@ function main()
 	dimx, dimy = size(plan)
 
 	PL = pathloss(dimx, dimy)
-	S =  shadowing(plan)
-	E = PL .- S
+	#S =  shadowing(plan)
+	E = PL# .- S
 
 	E[E .< -90] = -90    # simulate the noise floor to have a better scaling in the colormap
 	E[TX_POS...] = 1.0   # remove the singularity at the antenna position
@@ -95,7 +95,7 @@ function main()
 	field[:,:,3] = [ cm[ei].b for ei in Ei ]
 
 	fim = Images.colorim(permutedims(field, [2, 1, 3]))
-	Images.imwrite(fim, "figs/shtest.png")
+	Images.imwrite(fim, "figs/pltest.png")
 end
 
 main()
