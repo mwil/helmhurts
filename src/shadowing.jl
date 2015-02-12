@@ -35,12 +35,12 @@ Parameters:
 	`plan`:         a floor plan with white pixels signifying air, the rest are interpreted as walls.
 	`dB_per_pixel`: regulates the amount of fading that is induced by a single wall pixel."""
 function shadowing(plan; dB_per_pixel=0.1)
-	S = zeros(Float64, size(plan)...) .- 1.0
+	S = zeros(Float64, size(plan)) .- 1.0   # initialize unvisited elements in the matrix with -1
 	dimx, dimy = size(S)
 
-	# count the number of pixels that are non-white (walls)
+	# count the number of pixels on the path that are non-white (walls)
 	for x in 1:dimx, y in 1:dimy
-		if S[x,y] < 0.0
+		if S[x,y] < 0.0   # if S[x,y] == -1, we have not visited this element before, otherwise skip it
 			pixels = line(TX_POS[1],TX_POS[2], x,y)
 			wallcnt = 0.0
 
@@ -57,8 +57,12 @@ function shadowing(plan; dB_per_pixel=0.1)
 	return S
 end
 
+@doc doc"""
+Calculate distance matrix Dist and pathloss matrix PL to each matrix element.
+
+Parameters:
+	`scaling`: a correction factor to ensure that the distances on the floorplan result in a sane amount of fading."""
 function pathloss(dimx::Int, dimy::Int; scaling=0.2)
-	# calculate distance matrix Dist and pathloss matrix PL
 	Dist = zeros(Float64, (dimx, dimy))
 
 	for x in 1:dimx, y in 1:dimy
@@ -67,20 +71,19 @@ function pathloss(dimx::Int, dimy::Int; scaling=0.2)
 
 	Dist[TX_POS...] = Dist[TX_POS[1]-1, TX_POS[2]-1]
 
-	PL = similar(Dist, Float64)
+	PL = similar(Dist)
 	PL = 20 .* log10(Dist .^ -2)
 end
 
 function main()
 	img = Images.imread(INFILE)
 	plan = reinterpret(Uint8, Images.data(img));
-	dimx, dimy = size(plan)
 
-	PL = pathloss(dimx, dimy)
+	PL = pathloss(size(plan)...)
 	S =  shadowing(plan)
 	E = PL .- S
 
-	E[E .< -90] = -90    # simulate the noise floor to have a better scaling in the colormap
+	E[E .< -90] = -90    # simulate the noise floor to have a better scaling in the colormap (arbitrary value!)
 	E[TX_POS...] = 1.0   # remove the singularity at the antenna position
 
 	cm = reverse(Color.colormap("blues", N_COLORS))
@@ -89,7 +92,7 @@ function main()
 
 	Ei[plan .== 0] = N_COLORS;
 
-	field = Array(Float64, (size(Ei)[1], size(Ei)[2], 3))
+	field = zeros(size(Ei)[1], size(Ei)[2], 3)
 	field[:,:,1] = [ cm[ei].r for ei in Ei ]
 	field[:,:,2] = [ cm[ei].g for ei in Ei ]
 	field[:,:,3] = [ cm[ei].b for ei in Ei ]

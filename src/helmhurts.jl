@@ -1,7 +1,6 @@
-using Color
-using HDF5
-using Images
-using ImageView
+import Color
+import HDF5
+import Images
 
 const δ = 0.01                     # one pixel in the floor plan equals δ meters
 
@@ -20,8 +19,8 @@ const txX, txY = 870, 425 # -wf (-25)
 #const txX, txY = 460, 750 # AP
 
 function generateMu(infile)
-	img = imread(infile)
-	plan = reinterpret(Uint8, data(img));
+	img = Images.imread(infile)
+	plan = reinterpret(Uint8, Images.data(img));
 
 	μ = similar(plan, Complex)
 	μ[plan .== 0xff] = (k/n_air)^2            # white signifies empty space
@@ -33,9 +32,9 @@ end
 function generateMatrix(μ)
 	dimx, dimy = size(μ)  # spatial dimensions
 
-	xs = Array(Int,     5*length(μ))
-	ys = Array(Int,     5*length(μ))
-	vs = Array(Complex, 5*length(μ))
+	xs = zeros(Int,     5*length(μ))
+	ys = zeros(Int,     5*length(μ))
+	vs = zeros(Complex, 5*length(μ))
 	i = 1
 
 	for x in 1:dimx, y in 1:dimy
@@ -67,23 +66,23 @@ function generateMatrix(μ)
 end
 
 function plotMatrix(A, outfile)
-	E = 20*log10(real(A) .* real(A))
-	E[E .< -105.0] = -105.0
+	E = 20*log10(real(A) .* real(A))     # A is amplitude field, calculate the signal power
+	E[E .< -105.0] = -105.0              # apply lower limit to the power to add a noise floor
 	#writecsv("test.csv", E .- maximum(E))
-	#h5write("test.h5", "E", E .- maximum(E))
+	#HDF5.h5write("test.h5", "E", E .- maximum(E))
 
 	minE, maxE = minimum(E), maximum(E)
 	Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
 	cm = reverse(colormap("blues", N_COLORS))
 
-	img = imread(INFILE)
-	plan = reinterpret(Uint8, data(img));
-	Ei[plan .== 0] = N_COLORS;
+	img = Images.imread(INFILE)
+	plan = reinterpret(Uint8, Images.data(img));
+	Ei[plan .== 0] = N_COLORS;    # show walls ...
 	#Ei[txX-1:txX+1, txY-1:txY+1] = 100    # show antenna position
-	#Ei[txX-1:txX+1, txY-26:txY-24] = 100  # show second antenna position
+	#Ei[txX-1:txX+1, txY-26:txY-24] = 100  # show second antenna position for wf scenario
 
-	field = Array(FloatingPoint, (size(A)[1], size(A)[2], 3))
+	field = zeros((size(A)[1], size(A)[2], 3))
 	field[:,:,1] = [ cm[ei].r for ei in Ei ]
 	field[:,:,2] = [ cm[ei].g for ei in Ei ]
 	field[:,:,3] = [ cm[ei].b for ei in Ei ]
@@ -101,7 +100,6 @@ function main()
 	μ = generateMu(INFILE)
 	M = generateMatrix(μ)
 
-	# 375
 	for movey in (txY,)#1381:20:1420
 		f = zeros(Complex, size(μ))
 		f[txX, movey] = 2e3              # our Wifi emitter antenna will be there
@@ -112,7 +110,7 @@ function main()
 
 		println("Plotting matrix A …")
 		plotMatrix(A, "figs/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
-		A=0;f=0;
+		A=0;f=0; # avoid sporadic memory leaks ...
 	end
 end
 
