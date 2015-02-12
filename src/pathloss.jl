@@ -1,39 +1,49 @@
-using Color
-using Images
+import Color
+import Images
 
 const INFILE = "resources/floorplan-wf.png"
-const N_COLORS = 10
+const N_COLORS = 20
 
-const TX_POS    = 870, 425
-const TX_POS_IM = 870 + 425im
+const TX_POS = 870, 425
 
-img = imread(INFILE)
-plan = reinterpret(Uint8, data(img));
+function pathloss(dimx::Int, dimy::Int; scaling=0.2)
+	# calculate distance matrix Dist and pathloss matrix PL
+	Dist = zeros(Float64, (dimx, dimy))
 
-dimx, dimy = size(plan)
+	for x in 1:dimx, y in 1:dimy
+		Dist[x,y] = abs((TX_POS[1]+TX_POS[2]*im) - (x+y*im)) * scaling
+	end
 
-Dist = similar(plan, Float64)
+	Dist[TX_POS...] = Dist[TX_POS[1]-1, TX_POS[2]-1]
 
-for x in 1:dimx, y in 1:dimy
-	Dist[x,y] = 0.2*abs(x+y*im - TX_POS_IM)
+	PL = similar(Dist, Float64)
+	PL = 20 .* log10(Dist .^ -2)
 end
 
-Dist[TX_POS...] = Dist[TX_POS[1]-1, TX_POS[2]-1]
+function main()
+	img = Images.imread(INFILE)
+	plan = reinterpret(Uint8, Images.data(img));
+	dimx, dimy = size(plan)
 
-E = similar(Dist, Float64)
-E = 20 .* log10(Dist .^ -2)
+	PL = pathloss(dimx, dimy)
+	E = PL
 
-E[E .< -90] = -90
+	E[E .< -90] = -90    # simulate the noise floor to have a better scaling in the colormap
+	E[TX_POS...] = 1.0   # remove the singularity at the antenna position
 
-cm = reverse(colormap("blues", N_COLORS))
-Ei = round(Integer, min(N_COLORS, max(1, (int(1 .+ N_COLORS .* (E .- minimum(E))/(maximum(E) - minimum(E)))))))
+	cm = reverse(Color.colormap("blues", N_COLORS))
+	minE, maxE = minimum(E), maximum(E)
+	Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
-Ei[plan .== 0x00] = N_COLORS;   # draw the walls
+	Ei[plan .== 0] = N_COLORS;
 
-field = Array(Float64, (size(Ei)[1], size(Ei)[2], 3))
-field[:,:,1] = [ cm[ei].r for ei in Ei ]
-field[:,:,2] = [ cm[ei].g for ei in Ei ]
-field[:,:,3] = [ cm[ei].b for ei in Ei ]
+	field = Array(Float64, (size(Ei)[1], size(Ei)[2], 3))
+	field[:,:,1] = [ cm[ei].r for ei in Ei ]
+	field[:,:,2] = [ cm[ei].g for ei in Ei ]
+	field[:,:,3] = [ cm[ei].b for ei in Ei ]
 
-fim = colorim(permutedims(field, [2, 1, 3]))
-imwrite(fim, "figs/pltest.png")
+	fim = Images.colorim(permutedims(field, [2, 1, 3]))
+	Images.imwrite(fim, "figs/pltest.png")
+end
+
+main()
