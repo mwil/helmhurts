@@ -8,9 +8,15 @@ const TX_POS = 870, 425
 
 @doc doc"""
 Find the pixels on a straight line from (x0,y0) to (x1,y1).
-Returns a list of (x,y) tuples, including start and end points."""
+
+Parameters
+x0,y0: starting coordinates of the line
+x1,y1: end coordinates of the line
+
+Returns
+A list of (x,y) tuples that are touched by the line, including start and end points."""
 function line(x0::Int, y0::Int, x1::Int, y1::Int)
-	result = Array((Int,Int), 0)
+	result = Array((Int,Int), 0) # array of (x,y) tuples
 	rev = identity
 
 	if abs(y1-y0) ≤ abs(x1-x0)
@@ -41,18 +47,15 @@ function shadowing(plan; dB_per_pixel=0.1)
 	# count the number of pixels on the path that are non-white (walls)
 	for x in 1:dimx, y in 1:dimy
 		if S[x,y] < 0.0   # if S[x,y] == -1, we have not visited this element before, otherwise skip it
-			pixels = line(TX_POS[1],TX_POS[2], x,y)
+			pixels = line(TX_POS[1],TX_POS[2], x,y)  # start the line from the antenna
 			wallcnt = 0.0
 
 			for pixel in pixels
-				wallcnt += (plan[pixel...]≠0xff)? 1.0: 0.0
-				S[pixel...] = wallcnt
+				wallcnt += (plan[pixel...]≠0xff)? dB_per_pixel: 0.0
+				S[pixel...] = wallcnt  # set all pixels that we visit coming from the antenna as well
 			end
 		end
 	end
-
-	S[S.> 0.0] = S[S.>0.0] * dB_per_pixel
-	S[S.<=0.0] = 0.0
 
 	return S
 end
