@@ -1,5 +1,5 @@
 import Color
-import HDF5
+#import HDF5
 import Images
 
 const δ = 0.01                     # one pixel in the floor plan equals δ meters
@@ -106,7 +106,7 @@ function main()
 		#f[txX, movey-20] = 2e3
 
 		println("Solving the matrix equation A=M\\f …")
-		A = reshape(M \ vec(f), size(μ)...)
+		A = reshape(M \ sparsevec(f), size(μ)...)
 
 		println("Plotting matrix A …")
 		plotMatrix(A, "figs/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
