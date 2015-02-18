@@ -18,26 +18,26 @@ const N_COLORS = 20
 const txX, txY = 870, 425 # -wf (-25)
 #const txX, txY = 460, 750 # AP
 
-function generateMu(infile)
+function generateMu(infile::String)
 	img = Images.imread(infile)
 	plan = reinterpret(Uint8, Images.data(img));
 
-	μ = similar(plan, Complex)
+	μ = zeros(Complex128, size(plan))
 	μ[plan .== 0xff] = (k/n_air)^2            # white signifies empty space
 	μ[plan .≠  0xff] = (k/n_concrete)^2       # everything else are obstactles
 
 	return μ
 end
 
-function generateMatrix(μ)
+function generateM(μ::Array{Complex128})
 	dimx, dimy = size(μ)  # spatial dimensions
 
-	xs = zeros(Int,     5*length(μ))
-	ys = zeros(Int,     5*length(μ))
-	vs = zeros(Complex, 5*length(μ))
+	xs = zeros(Int, 5*length(μ))
+	ys = zeros(Int, 5*length(μ))
+	vs = zeros(Complex128, 5*length(μ))
 	i = 1
 
-	for x in 1:dimx, y in 1:dimy
+	for y in 1:dimy, x in 1:dimx
 		xm = (x+dimx-2) % dimx + 1
 		xp =          x % dimx + 1
 		ym = (y+dimy-2) % dimy + 1
@@ -65,14 +65,14 @@ function generateMatrix(μ)
 	return sparse(xs, ys, vs, length(μ), length(μ))
 end
 
-function plotMatrix(A, outfile)
+function plotMatrix(A::Array{Complex128}, outfile::String)
 	E = 20*log10(real(A) .* real(A))     # A is amplitude field, calculate the signal power
 	E[E .< -105.0] = -105.0              # apply lower limit to the power to add a noise floor
 	#writecsv("test.csv", E .- maximum(E))
 	#HDF5.h5write("test.h5", "E", E .- maximum(E))
 
 	minE, maxE = minimum(E), maximum(E)
-	Ei = round(Integer, min(N_COLORS, max(1, (round(Integer, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
+	Ei = round(Int, min(N_COLORS, max(1, (round(Int, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
 
 	cm = reverse(colormap("blues", N_COLORS))
 
@@ -98,15 +98,15 @@ end
 function main()
 	println("Starting operation …")
 	μ = generateMu(INFILE)
-	M = generateMatrix(μ)
+	M = generateM(μ)
 
 	for movey in (txY,)#1381:20:1420
-		f = zeros(Complex, size(μ))
+		f = zeros(Complex128, size(μ))
 		f[txX, movey] = 2e3              # our Wifi emitter antenna will be there
 		#f[txX, movey-20] = 2e3
 
 		println("Solving the matrix equation A=M\\f …")
-		A = reshape(M \ sparsevec(f), size(μ)...)
+		A = reshape(M \ sparsevec(f), size(μ))
 
 		println("Plotting matrix A …")
 		plotMatrix(A, "figs/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")

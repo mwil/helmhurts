@@ -45,7 +45,7 @@ function shadowing(plan; dB_per_pixel=0.1)
 	dimx, dimy = size(S)
 
 	# count the number of pixels on the path that are non-white (walls)
-	for x in 1:dimx, y in 1:dimy
+	for y in 1:dimy, x in 1:dimx
 		if S[x,y] < 0.0   # if S[x,y] == -1, we have not visited this element before, otherwise skip it
 			pixels = line(TX_POS[1],TX_POS[2], x,y)  # start the line from the antenna
 			wallcnt = 0.0
@@ -68,14 +68,14 @@ Parameters:
 function pathloss(dimx::Int, dimy::Int; scaling=0.2)
 	Dist = zeros(Float64, (dimx, dimy))
 
-	for x in 1:dimx, y in 1:dimy
+	for y in 1:dimy, x in 1:dimx
 		Dist[x,y] = abs((TX_POS[1]+TX_POS[2]*im) - (x+y*im)) * scaling
 	end
 
 	Dist[TX_POS...] = Dist[TX_POS[1]-1, TX_POS[2]-1]
 
 	PL = similar(Dist)
-	PL = 20 .* log10(Dist .^ -2)
+	PL = 20 * log10(Dist.^-2)
 end
 
 function main()
