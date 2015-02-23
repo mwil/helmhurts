@@ -28,15 +28,17 @@ function main()
 	M = generateM(μ)
 
 	for movey in (txY,)#1381:20:1420
-		f = sparsevec([sub2ind(size(μ), txX, movey)], [2e3], length(μ)) # emitter placement
+		f = zeros(size(μ))
+		#f = sparsevec([sub2ind(size(μ), txX, movey)], [2e3], length(μ)) # emitter placement
+		f[txX, movey] = 2e3
 		#sub2ind(size(μ), txX, movey-20)
 
 		println("Solving the matrix equation A=M\\f …")
-		A = reshape(M\f, size(μ))
+		A = reshape(M\vec(f), size(μ))
 
 		println("Plotting matrix A …")
-		plotMatrix(A, joinpath("figs", "h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
-		A=0;f=0; # avoid sporadic memory leaks ...
+		plotMatrix(A, joinpath("figs", "h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png"))
+		A=0;f=0; # avoid sporadic memory overflows ...
 	end
 end
 
@@ -82,7 +84,7 @@ function generateM(μ::Array{Complex128})
 			if 1<x<dimx && 1<y<dimy
 				vs[i] = δ^-2
 			else
-				vs[i] = 1e4 # FIXME: what should happen when the matrix hits the boundaries?
+				vs[i] = 1e-9 # FIXME: what should happen when the matrix hits the boundaries?
 			end
 
 			i += 1
@@ -103,24 +105,24 @@ function plotMatrix(A::Array{Complex128}, outfile::String)
 	#HDF5.h5write("test.h5", "E", E .- maximum(E))
 
 	minE, maxE = minimum(E), maximum(E)
-	Ei = round(Int, min(N_COLORS, max(1, (round(Int, 1 + N_COLORS*(E .- minE)/(maxE - minE))))))
+	Ei = round(Int, min(N_COLORS, max(1, round(Int, 1 + N_COLORS*(E .- minE)/(maxE - minE)))))
 
-	cm = reverse(colormap("blues", N_COLORS))
+	cm = reverse(Color.colormap("blues", N_COLORS))
 
 	img = Images.imread(INFILE)
-	plan = reinterpret(Uint8, Images.data(img));
-	Ei[plan .== 0] = N_COLORS;    # show walls ...
+	plan = reinterpret(Uint8, Images.data(img))
+	Ei[plan .== 0] = N_COLORS    # show walls ...
 	#Ei[txX-1:txX+1, txY-1:txY+1] = 100    # show antenna position
 	#Ei[txX-1:txX+1, txY-26:txY-24] = 100  # show second antenna position for wf scenario
 
-	field = zeros(Int, size(Ei)[1], size(Ei)[2], 3)
+	field = zeros(Float64, size(Ei)[1], size(Ei)[2], 3)
 	field[:,:,1] = [ cm[ei].r for ei in Ei ]
 	field[:,:,2] = [ cm[ei].g for ei in Ei ]
 	field[:,:,3] = [ cm[ei].b for ei in Ei ]
 
-	fim = colorim(permutedims(field, [2, 1, 3]))
+	fim = Images.colorim(permutedims(field, [2, 1, 3]))
 
-	imwrite(fim, outfile)
+	Images.imwrite(fim, outfile)
 end
 
 # -----------------------------------------------------------------------------
