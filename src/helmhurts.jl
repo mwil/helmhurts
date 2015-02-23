@@ -18,6 +18,32 @@ const N_COLORS = 20
 const txX, txY = 870, 425 # -wf (-25)
 #const txX, txY = 460, 750 # AP
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+function main()
+	println("Starting operation …")
+	μ = generateMu(INFILE)
+	M = generateM(μ)
+
+	for movey in (txY,)#1381:20:1420
+		f = sparsevec([sub2ind(size(μ), txX, movey)], [2e3], length(μ)) # emitter placement
+		#sub2ind(size(μ), txX, movey-20)
+
+		println("Solving the matrix equation A=M\\f …")
+		A = reshape(M\f, size(μ))
+
+		println("Plotting matrix A …")
+		plotMatrix(A, joinpath("figs", "h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
+		A=0;f=0; # avoid sporadic memory leaks ...
+	end
+end
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 function generateMu(infile::String)
 	img = Images.imread(infile)
 	plan = reinterpret(Uint8, Images.data(img));
@@ -28,6 +54,7 @@ function generateMu(infile::String)
 
 	return μ
 end
+# -----------------------------------------------------------------------------
 
 function generateM(μ::Array{Complex128})
 	dimx, dimy = size(μ)  # spatial dimensions
@@ -65,6 +92,10 @@ function generateM(μ::Array{Complex128})
 	return sparse(xs, ys, vs, length(μ), length(μ))
 end
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 function plotMatrix(A::Array{Complex128}, outfile::String)
 	E = 20*log10(real(A) .* real(A))     # A is amplitude field, calculate the signal power
 	E[E .< -105.0] = -105.0              # apply lower limit to the power to add a noise floor
@@ -72,7 +103,7 @@ function plotMatrix(A::Array{Complex128}, outfile::String)
 	#HDF5.h5write("test.h5", "E", E .- maximum(E))
 
 	minE, maxE = minimum(E), maximum(E)
-	Ei = round(Int, min(N_COLORS, max(1, (round(Int, 1 .+ N_COLORS .* (E .- minE)/(maxE - minE))))))
+	Ei = round(Int, min(N_COLORS, max(1, (round(Int, 1 + N_COLORS*(E .- minE)/(maxE - minE))))))
 
 	cm = reverse(colormap("blues", N_COLORS))
 
@@ -82,7 +113,7 @@ function plotMatrix(A::Array{Complex128}, outfile::String)
 	#Ei[txX-1:txX+1, txY-1:txY+1] = 100    # show antenna position
 	#Ei[txX-1:txX+1, txY-26:txY-24] = 100  # show second antenna position for wf scenario
 
-	field = zeros((size(A)[1], size(A)[2], 3))
+	field = zeros(Int, size(Ei)[1], size(Ei)[2], 3)
 	field[:,:,1] = [ cm[ei].r for ei in Ei ]
 	field[:,:,2] = [ cm[ei].g for ei in Ei ]
 	field[:,:,3] = [ cm[ei].b for ei in Ei ]
@@ -92,29 +123,8 @@ function plotMatrix(A::Array{Complex128}, outfile::String)
 	imwrite(fim, outfile)
 end
 
-## -------------------------------------------
-## -------------------------------------------
-
-function main()
-	println("Starting operation …")
-	μ = generateMu(INFILE)
-	M = generateM(μ)
-
-	for movey in (txY,)#1381:20:1420
-		f = zeros(Complex128, size(μ))
-		f[txX, movey] = 2e3              # our Wifi emitter antenna will be there
-		#f[txX, movey-20] = 2e3
-
-		println("Solving the matrix equation A=M\\f …")
-		A = reshape(M \ sparsevec(f), size(μ))
-
-		println("Plotting matrix A …")
-		plotMatrix(A, "figs/h-$(lpad(txX, 4, '0'))x$(lpad(movey, 4, '0')).png")
-		A=0;f=0; # avoid sporadic memory leaks ...
-	end
-end
-
-## -------------------------------------------
-## -------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 main()
