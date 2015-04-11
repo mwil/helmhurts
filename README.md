@@ -9,6 +9,20 @@ I initially started by using code from Frédéric Testard ([fredo-dedup](https:/
 
 The code iterates naively over all pixels of a floorplan to count wall pixels for shadowing or inverts a giant matrix, so try to use a PNG floorplan with less pixels if you run into problems.
 
+## How to Use
+###Install Julia runtime
+From http://julialang.org/ or from repository
+###install dependencies
+julia -e 'Pkg.add("Color")'
+julia -e 'Pkg.add("Images")'
+###create output folder figs
+mkdir helmhurts/figs
+
+julia src/helmhurts.jl
+
+It use lot of RAM. For demo example about 10 Gb
+
+
 ##Example Outputs
 Some example figures produced by the current implementation.
 ###Path Loss
