@@ -14,13 +14,14 @@ The code iterates naively over all pixels of a floorplan to count wall pixels fo
 From http://julialang.org/ or from repository
 ###install dependencies
 julia -e 'Pkg.add("Color")'
+
 julia -e 'Pkg.add("Images")'
 ###create output folder figs
 mkdir helmhurts/figs
 
 julia src/helmhurts.jl
 
-It use lot of RAM. For demo example about 10 Gb
+It use lot of RAM. For demo example about 10 GB due to the resolution of the provided image.
 
 
 ##Example Outputs
