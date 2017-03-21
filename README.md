@@ -11,17 +11,17 @@ The code iterates naively over all pixels of a floorplan to count wall pixels fo
 
 ## How to Use
 ### Install Julia runtime
-From http://julialang.org/ or from repository
+From http://julialang.org/ or from repository. The current targeted Julia version is 0.5, expect some issues due to Julia API changes.
 
 ### Install dependencies
 ```julia
-julia -e 'Pkg.add("Color")'
+julia -e 'Pkg.add("Colors")'
 julia -e 'Pkg.add("Images")'
 ```
 
-### Create output folder figs
+### Create output folder figs in the root directory
 ```bash
-mkdir helmhurts/figs
+mkdir figs
 julia src/helmhurts.jl
 ```
 
