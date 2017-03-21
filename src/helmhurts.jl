@@ -122,7 +122,7 @@ function plotMatrix(A::Array{Complex128}, outfile::String)
     # Show the position of the antenna by a white block
     field[txX-3:txX+3, txY-3:txY+3] = Images.RGB(1, 1, 1)
 
-    fim = Images.save(outfile, Images.colorim(field))
+    Images.save(outfile, Images.colorim(field))
 end
 
 # -----------------------------------------------------------------------------
