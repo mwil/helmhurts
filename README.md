@@ -25,7 +25,7 @@ $ mkdir figs
 $ julia src/helmhurts.jl
 ```
 
-It use lot of RAM. For demo example about 10 GB due to the resolution of the provided image.
+It uses lot of RAM. For demo example about 10 GB due to the resolution of the provided image.
 
 
 ## Example Outputs
