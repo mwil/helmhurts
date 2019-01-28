@@ -1,5 +1,6 @@
 import Colors
 import Images
+import SparseArrays
 
 # one pixel in the floor plan equals δ meters
 const δ = 0.01
@@ -51,20 +52,21 @@ end
 function generateMu(infile::String)
     plan = Images.load(infile)
 
-    μ = zeros(Complex128, size(plan))
-    μ[plan .== 1] = (k/n_air)^2            # white signifies empty space
-    μ[plan .≠  1] = (k/n_concrete)^2       # everything else are obstactles
+    μ = zeros(ComplexF64, size(plan))
+    μ[plan .== 1] .= (k/n_air)^2            # white signifies empty space
+    μ[plan .≠  1] .= (k/n_concrete)^2       # everything else are obstactles
 
     return μ
 end
 # -----------------------------------------------------------------------------
 
-function generateM(μ::Array{Complex128})
+function generateM(μ::Array{Complex{Float64}})
     dimx, dimy = size(μ)  # spatial dimensions
+    μ_lin_idx = LinearIndices(μ)
 
     xs = zeros(Int, 5*length(μ))
     ys = zeros(Int, 5*length(μ))
-    vs = zeros(Complex128, 5*length(μ))
+    vs = zeros(Complex{Float64}, 5*length(μ))
     i = 1
 
     for y in 1:dimy, x in 1:dimx
@@ -73,14 +75,14 @@ function generateM(μ::Array{Complex128})
         ym = (y+dimy-2) % dimy + 1
         yp =          y % dimy + 1
 
-        xs[i] = sub2ind(size(μ), x, y)
-        ys[i] = sub2ind(size(μ), x, y)
+        xs[i] = μ_lin_idx[x, y]
+        ys[i] = μ_lin_idx[x, y]
         vs[i] = μ[x,y] - 4δ^-2
         i += 1
 
         for idx in ((xp, y), (xm, y), (x, yp), (x, ym))
-            xs[i] = sub2ind(size(μ), x, y)
-            ys[i] = sub2ind(size(μ), idx...)
+            xs[i] = μ_lin_idx[x, y]
+            ys[i] = μ_lin_idx[idx...]
 
             if 1<x<dimx && 1<y<dimy
                 vs[i] = δ^-2
@@ -93,36 +95,36 @@ function generateM(μ::Array{Complex128})
         end
     end
 
-    return sparse(xs, ys, vs, length(μ), length(μ))
+    return SparseArrays.sparse(xs, ys, vs, length(μ), length(μ))
 end
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-function plotMatrix(A::Array{Complex128}, outfile::String)
+function plotMatrix(A::Array{Complex{Float64}}, outfile::String)
     plan = Images.load(INFILE)
 
     # A is amplitude field, calculate the signal power
-    E = 20*log10(real(A) .* real(A))
+    E = 20*log10.(real(A) .* real(A))
 
     # Apply lower limit to the power to add a noise floor
-    E[E .< -105.0] = -105.0
+    E[E .< -105.0] .= -105.0
 
     minE, maxE = minimum(E), maximum(E)
     # Limit the Ei matrix to values in 1..N_COLORS
-    Ei = round(Int, min(N_COLORS, max(1, round(Int, 1 + N_COLORS*(E .- minE)/(maxE - minE)))))
+    Ei = round.(Int, min.(N_COLORS, max.(1, round.(Int, 1 .+ N_COLORS*(E .- minE)/(maxE - minE)))))
 
     cm = reverse(Colors.colormap("blues", N_COLORS))
     # Choose colors from the colormap according to the Ei int values
     field = [cm[ei] for ei in Ei]
 
     # Show walls by using the maximum color
-    field[plan .== 0] = Images.RGB(1, 1, 1)
+    field[plan .== 0] .= Images.RGB(1, 1, 1)
     # Show the position of the antenna by a white block
-    field[txX-3:txX+3, txY-3:txY+3] = Images.RGB(1, 1, 1)
+    field[txX-3:txX+3, txY-3:txY+3] .= Images.RGB(1, 1, 1)
 
-    Images.save(outfile, Images.colorim(field))
+    Images.save(outfile, field)
 end
 
 # -----------------------------------------------------------------------------
