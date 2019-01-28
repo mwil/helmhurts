@@ -11,7 +11,7 @@ The code iterates naively over each and every pixel of a floorplan to count wall
 
 ## How to Use
 ### Install Julia runtime
-From http://julialang.org/ or from repository. The currently targeted Julia version is 0.5, expect some issues due to Julia API changes. They really like to do that.
+From http://julialang.org/ or from repository. The currently targeted Julia version is 1.0, expect some issues due to Julia API changes. They really like to do that.
 
 ### Install dependencies
 ```bash
@@ -25,7 +25,7 @@ $ mkdir figs
 $ julia src/helmhurts.jl
 ```
 
-It uses lot of RAM. For demo example about 10 GB due to the resolution of the provided image.
+Be aware that this operation needs a lot of RAM. For the demo example about 10 GB due to the resolution of the provided image.
 
 
 ## Example Outputs
